@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -23,24 +23,28 @@ jobs:
             target: x86_64-pc-windows-msvc
             bin_name: ncmdump.exe
             final_name: ncmdump-windows-x86_64.exe
+            archive_name: ncmdump-windows-x86_64.zip
           
           - job_name: macOS (Apple Silicon / arm64)
             os: macos-latest
             target: aarch64-apple-darwin
             bin_name: ncmdump
             final_name: ncmdump-macos-arm64
+            archive_name: ncmdump-macos-arm64.zip
             
           - job_name: macOS (Intel / x86_64)
             os: macos-latest
             target: x86_64-apple-darwin
             bin_name: ncmdump
             final_name: ncmdump-macos-x86_64
+            archive_name: ncmdump-macos-x86_64.zip
 
           - job_name: Linux (x86_64)
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             bin_name: ncmdump
             final_name: ncmdump-linux-x86_64
+            archive_name: ncmdump-linux-x86_64.zip
 
     steps:
       - name: Checkout repository
@@ -54,23 +58,30 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename binary (Unix)
+      - name: Archive binary (Unix)
         if: matrix.os != 'windows-latest'
-        run: mv target/${{ matrix.target }}/release/${{ matrix.bin_name }} target/${{ matrix.target }}/release/${{ matrix.final_name }}
+        run: |
+          cd target/${{ matrix.target }}/release
+          mv ${{ matrix.bin_name }} ${{ matrix.final_name }}
+          zip ${{ matrix.archive_name }} ${{ matrix.final_name }}
 
-      - name: Rename binary (Windows)
+      - name: Archive binary (Windows)
         if: matrix.os == 'windows-latest'
-        run: Rename-Item -Path "target\${{ matrix.target }}\release\${{ matrix.bin_name }}" -NewName "${{ matrix.final_name }}"
+        run: |
+          cd target\${{ matrix.target }}\release
+          Rename-Item -Path "${{ matrix.bin_name }}" -NewName "${{ matrix.final_name }}"
+          Compress-Archive -Path "${{ matrix.final_name }}" -DestinationPath "${{ matrix.archive_name }}"
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.final_name }}
-          path: target/${{ matrix.target }}/release/${{ matrix.final_name }}
+          name: ${{ matrix.archive_name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.archive_name }}
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: Latest Build
-          files: target/${{ matrix.target }}/release/${{ matrix.final_name }}
+          prerelease: true
+          files: target/${{ matrix.target }}/release/${{ matrix.archive_name }}
