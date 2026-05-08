@@ -1,11 +1,10 @@
-name: Build
+name: release
 
 on:
   push:
-    branches: [ "master", "main" ]
-    tags: [ "v*" ]
-  pull_request:
-    branches: [ "master", "main" ]
+    branches:
+      - "master"
+      - "main"
   workflow_dispatch:
 
 jobs:
@@ -22,14 +21,12 @@ jobs:
             bin_name: ncmdump.exe
             final_name: ncmdump-windows-x86_64.exe
           
-          # Apple Silicon
           - job_name: macOS (Apple Silicon / arm64)
             os: macos-latest
             target: aarch64-apple-darwin
             bin_name: ncmdump
             final_name: ncmdump-macos-arm64
             
-          # Cross-compile for older Intel Macs from Apple Silicon
           - job_name: macOS (Intel / x86_64)
             os: macos-latest
             target: x86_64-apple-darwin
@@ -54,7 +51,6 @@ jobs:
       - name: Build release binary
         run: cargo build --release --target ${{ matrix.target }}
 
-      # Rename files so they have clear names when you download them
       - name: Rename binary (Unix)
         if: matrix.os != 'windows-latest'
         run: mv target/${{ matrix.target }}/release/${{ matrix.bin_name }} target/${{ matrix.target }}/release/${{ matrix.final_name }}
@@ -69,9 +65,9 @@ jobs:
           name: ${{ matrix.final_name }}
           path: target/${{ matrix.target }}/release/${{ matrix.final_name }}
 
-      # Only runs when you push a tag (like v1.0.0) to automatically create a GitHub Release
       - name: Upload to GitHub Releases
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: latest
+          name: Latest Build
           files: target/${{ matrix.target }}/release/${{ matrix.final_name }}
