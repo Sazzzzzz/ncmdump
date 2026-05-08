@@ -1,0 +1,77 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master", "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.job_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job_name: Windows (x86_64)
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin_name: ncmdump.exe
+            final_name: ncmdump-windows-x86_64.exe
+          
+          # Apple Silicon
+          - job_name: macOS (Apple Silicon / arm64)
+            os: macos-latest
+            target: aarch64-apple-darwin
+            bin_name: ncmdump
+            final_name: ncmdump-macos-arm64
+            
+          # Cross-compile for older Intel Macs from Apple Silicon
+          - job_name: macOS (Intel / x86_64)
+            os: macos-latest
+            target: x86_64-apple-darwin
+            bin_name: ncmdump
+            final_name: ncmdump-macos-x86_64
+
+          - job_name: Linux (x86_64)
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin_name: ncmdump
+            final_name: ncmdump-linux-x86_64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      # Rename files so they have clear names when you download them
+      - name: Rename binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: mv target/${{ matrix.target }}/release/${{ matrix.bin_name }} target/${{ matrix.target }}/release/${{ matrix.final_name }}
+
+      - name: Rename binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: Rename-Item -Path "target\${{ matrix.target }}\release\${{ matrix.bin_name }}" -NewName "${{ matrix.final_name }}"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.final_name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.final_name }}
+
+      # Only runs when you push a tag (like v1.0.0) to automatically create a GitHub Release
+      - name: Upload to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: target/${{ matrix.target }}/release/${{ matrix.final_name }}
