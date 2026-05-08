@@ -103,14 +103,10 @@ pub fn dump<P: AsRef<Path>>(file_path: P) -> Result<PathBuf> {
         file_path.file_stem().unwrap().to_string_lossy(),
         metadata.format
     );
-    let current_dir = std::env::current_dir().context("Failed to get current directory")?;
-    let out_path = current_dir.join(&file_name);
+    let out_path = file_path.with_file_name(&file_name);
 
     if out_path.exists() {
-        eprintln!(
-            "Warning: Output file {} already exists and will be overwritten.",
-            out_path.display()
-        );
+        eprintln!("警告: {} 已存在，该文件将被覆盖。", out_path.display());
     }
 
     let mut out_file = File::create(&out_path).context("Failed to create output file")?;
