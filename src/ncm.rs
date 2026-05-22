@@ -88,14 +88,29 @@ pub fn dump<P: AsRef<Path>>(file_path: P) -> Result<PathBuf> {
     let metadata: NcmMetadata =
         serde_json::from_str(meta_json_str).context("Failed to parse metadata JSON")?;
 
-    // CRC32 + 5 bytes gap (f.seek(5, 1) in python)
-    f.seek(SeekFrom::Current(9))?;
+    // Skip 5 bytes: CRC32 (4 bytes) + 1 byte gap
+    // (f.seek(5, 1) in both python and C++ reference)
+    f.seek(SeekFrom::Current(5))?;
 
-    // Read Image Size and skip image
+    // Read image frame length (total bytes in this section)
     f.read_exact(&mut len_buf)
-        .context("Failed to read image size")?;
-    let img_size = u32::from_le_bytes(len_buf) as u64;
-    f.seek(SeekFrom::Current(img_size as i64))?;
+        .context("Failed to read image frame length")?;
+    let cover_frame_len = u32::from_le_bytes(len_buf) as u64;
+
+    // Read actual image data length
+    f.read_exact(&mut len_buf)
+        .context("Failed to read image data length")?;
+    let img_len = u32::from_le_bytes(len_buf) as u64;
+
+    // Skip image data
+    if img_len > 0 {
+        f.seek(SeekFrom::Current(img_len as i64))?;
+    }
+
+    // Skip any remaining padding in the cover frame
+    if cover_frame_len > img_len {
+        f.seek(SeekFrom::Current((cover_frame_len - img_len) as i64))?;
+    }
 
     // Create Output file path
     let file_name = format!(
