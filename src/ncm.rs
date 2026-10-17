@@ -3,7 +3,7 @@ use anyhow::{Context, Result, bail};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use serde::Deserialize;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug)]
@@ -13,9 +13,13 @@ pub struct NcmMetadata {
     // Other fields exist but format is the only one required for the output filename
 }
 
-pub fn dump<P: AsRef<Path>>(file_path: P) -> Result<PathBuf> {
-    let file_path = file_path.as_ref();
-    let mut f = File::open(file_path).context("Failed to open NCM file")?;
+pub struct NcmOutput {
+    pub format: String,
+    pub data: Vec<u8>,
+}
+
+pub fn ncm_dump_bytes(input: &[u8]) -> Result<NcmOutput> {
+    let mut f = Cursor::new(input);
 
     let mut header = [0u8; 8];
     f.read_exact(&mut header).context("Failed to read header")?;
@@ -112,19 +116,7 @@ pub fn dump<P: AsRef<Path>>(file_path: P) -> Result<PathBuf> {
         f.seek(SeekFrom::Current((cover_frame_len - img_len) as i64))?;
     }
 
-    // Create Output file path
-    let file_name = format!(
-        "{}.{}",
-        file_path.file_stem().unwrap().to_string_lossy(),
-        metadata.format
-    );
-    let out_path = file_path.with_file_name(&file_name);
-
-    if out_path.exists() {
-        eprintln!("警告: {} 已存在，该文件将被覆盖。", out_path.display());
-    }
-
-    let mut out_file = File::create(&out_path).context("Failed to create output file")?;
+    let mut data = Vec::new();
     let mut chunk = vec![0u8; 0x8000];
 
     loop {
@@ -139,8 +131,34 @@ pub fn dump<P: AsRef<Path>>(file_path: P) -> Result<PathBuf> {
                 (key_box[j] as usize + key_box[(key_box[j] as usize + j) & 0xFF] as usize) & 0xFF;
             chunk[i - 1] ^= key_box[idx];
         }
-        out_file.write_all(&chunk[..n])?;
+        data.extend_from_slice(&chunk[..n]);
     }
+
+    Ok(NcmOutput {
+        format: metadata.format,
+        data,
+    })
+}
+
+pub fn dump<P: AsRef<Path>>(file_path: P) -> Result<PathBuf> {
+    let file_path = file_path.as_ref();
+    let input = std::fs::read(file_path).context("Failed to open NCM file")?;
+    let output = ncm_dump_bytes(&input)?;
+
+    // Create Output file path
+    let file_name = format!(
+        "{}.{}",
+        file_path.file_stem().unwrap().to_string_lossy(),
+        output.format
+    );
+    let out_path = file_path.with_file_name(&file_name);
+
+    if out_path.exists() {
+        eprintln!("警告: {} 已存在，该文件将被覆盖。", out_path.display());
+    }
+
+    let mut out_file = File::create(&out_path).context("Failed to create output file")?;
+    out_file.write_all(&output.data)?;
 
     Ok(out_path)
 }

@@ -1,4 +1,5 @@
 /target
+/web/pkg
 .vscode/
 .DS_Store
 *.ncm

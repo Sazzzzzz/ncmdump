@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="NCM 解压 —— 网易云音乐 .ncm 文件解密工具，纯静态网页，本地处理。" />
+  <title>NCM 解压</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <main class="container">
+    <header>
+      <h1>NCMDump</h1>
+      <p class="subtitle">一款网易云音乐 .ncm 文件本地解密工具</p>
+    </header>
+
+    <div id="drop-zone" class="drop-zone" role="button" tabindex="0">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
+      </svg>
+      <p class="dz-title">拖拽 .ncm 文件到此处</p>
+      <p class="dz-sub">或点击选择文件</p>
+      <input type="file" id="file-input" accept=".ncm" multiple hidden />
+    </div>
+
+    <ul id="status-list" class="status-list"></ul>
+
+    <footer>文件仅在本地浏览器内处理，不会上传至任何服务器</footer>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+
+</html>
