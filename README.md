@@ -3,7 +3,8 @@
 > 一款 Rust 编写的网易云音乐 `.ncm` 解密工具
 
 [![Rust](https://img.shields.io/badge/made%20with-Rust-orange?style=flat-square&logo=rust)](https://www.rust-lang.org/)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)]()
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)](https://github.com/Sazzzzzz/ncmdump/releases)
+[![Web](https://img.shields.io/badge/Web-WASM-blue?style=flat-square&logo=webassembly)](https://ncmdump.caffein3.workers.dev/)
 
 ---
 
@@ -13,13 +14,18 @@
 
 **主要特性**：
 
-+ **使用简单**，下载后只需要放在网易云下载目录下别管，双击拖拽即可。
++ **使用简单**，下载后只需要放在网易云下载目录下，双击拖拽即可。
 + **纯 Rust** 实现，安全高效
-+ **零依赖**，单文件可执行，下载即用
++ **零依赖** 单文件可执行，下载即用
++ **网页版可用**，基于 Rust + WebAssembly，打开即用
 
 ---
 
 ## 🚀 使用方法
+
+### 🌐 网页版
+
+进入这个[网站](https://ncmdump.caffein3.workers.dev/)，拖入 `.ncm` 文件即可解密并自动下载，点击即用 `:-D`。
 
 ### 🖥️ Windows / macOS
 
