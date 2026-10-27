@@ -4,3 +4,4 @@
 .DS_Store
 *.ncm
 *.mp3
+Cargo.lock
